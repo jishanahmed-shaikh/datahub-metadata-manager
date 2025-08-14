@@ -42,6 +42,74 @@ A comprehensive web application for managing and emitting metadata from Trino ta
 - **Visual Feedback**: Clear status indicators and progress tracking
 - **Error Prevention**: Comprehensive validation and user guidance
 
+### 🔌 **Multi-Connector Support**
+
+- **Current**: Full Trino integration with comprehensive metadata support
+- **Coming Soon**: Support for additional data platforms (Snowflake, BigQuery, PostgreSQL, and more)
+
+## 📋 Prerequisites
+
+Before setting up the DataHub Metadata Manager, ensure you have the following components running:
+
+### 🐳 **DataHub (Dockerized Setup)**
+
+DataHub is a modern data discovery and observability platform. You need a running DataHub instance to emit metadata.
+
+**Quick DataHub Setup:**
+```bash
+# Install DataHub CLI
+pip install acryl-datahub
+
+# Start DataHub with Docker Compose (requires Docker)
+datahub docker quickstart
+
+# Or use the official Docker Compose setup
+git clone https://github.com/datahub-project/datahub.git
+cd datahub/docker/quickstart
+docker-compose up -d
+```
+
+**DataHub will be available at:**
+- **Frontend UI**: `http://localhost:9002`
+- **GMS API**: `http://localhost:8080` (used by this application)
+
+### 🗄️ **Trino Server**
+
+Trino is a distributed SQL query engine. You need a running Trino server to connect to your data sources.
+
+**Trino Setup Options:**
+
+1. **Docker (Quick Start):**
+```bash
+docker run -d --name trino -p 8080:8080 trinodb/trino:latest
+```
+
+2. **Production Setup:**
+   - Follow the [official Trino documentation](https://trino.io/docs/current/installation.html)
+   - Configure your data source connectors (Hive, PostgreSQL, MySQL, etc.)
+   - Ensure proper security and authentication
+
+3. **Cloud Managed:**
+   - AWS EMR with Trino
+   - Starburst Enterprise
+   - Other managed Trino services
+
+### 🔧 **System Requirements**
+
+- **Python**: 3.7 or higher
+- **Docker**: For DataHub setup (recommended)
+- **Network Access**: Between this application, Trino, and DataHub
+- **Memory**: Minimum 4GB RAM for local development
+- **Storage**: Sufficient space for Docker containers and logs
+
+### ✅ **Verification**
+
+Before proceeding, verify your setup:
+
+1. **DataHub**: Access `http://localhost:9002` and see the DataHub UI
+2. **Trino**: Connect to your Trino server and run `SHOW CATALOGS`
+3. **Network**: Ensure all components can communicate with each other
+
 ## 🏗️ Project Structure
 
 ```
