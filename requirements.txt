@@ -1,0 +1,5 @@
+trino
+pandas
+acryl-datahub
+flask
+werkzeug

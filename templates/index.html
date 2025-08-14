@@ -1,0 +1,1930 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-database"></i> DataHub Metadata Manager
+        </h1>
+        
+        <!-- Status Overview -->
+        <div class="card mb-4 bg-light">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0"><i class="fas fa-info-circle"></i> Current Status</h6>
+                    <button id="clearSessionBtn" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash"></i> Clear All Data
+                    </button>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <small><strong>Catalog:</strong></small><br>
+                        <span id="statusCatalog" class="text-muted">Not selected</span>
+                    </div>
+                    <div class="col-md-3">
+                        <small><strong>Schema:</strong></small><br>
+                        <span id="statusSchema" class="text-muted">Not selected</span>
+                    </div>
+                    <div class="col-md-3">
+                        <small><strong>Tables Loaded:</strong></small><br>
+                        <span id="statusTables" class="text-muted">0</span>
+                    </div>
+                    <div class="col-md-3">
+                        <small><strong>Tables with Metadata:</strong></small><br>
+                        <span id="statusMetadata" class="text-muted">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Step 1: Load Catalogs -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-database"></i> Step 1: Load Catalogs</h5>
+            </div>
+            <div class="card-body">
+                <p>Connect to Trino and load available catalogs.</p>
+                <button id="loadCatalogsBtn" class="btn btn-primary">
+                    <i class="fas fa-sync"></i> Load All Catalogs
+                </button>
+                <div id="catalogsStatus" class="mt-3"></div>
+                
+                <div id="catalogSelection" class="mt-3" style="display: none;">
+                    <label for="catalogSelect" class="form-label">Select Catalog:</label>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <select id="catalogSelect" class="form-select">
+                                <option value="">Choose a catalog</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button id="loadSchemasBtn" class="btn btn-success">
+                                <i class="fas fa-arrow-right"></i> Load Schemas from Catalog
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="schemaSelection" class="mt-3" style="display: none;">
+                    <label for="schemaSelect" class="form-label">Select Schema:</label>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <select id="schemaSelect" class="form-select">
+                                <option value="">Choose a schema</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button id="loadTablesBtn" class="btn btn-warning">
+                                <i class="fas fa-arrow-right"></i> Load Tables from Schema
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="schemaStatus" class="mt-3"></div>
+                
+                <!-- Test Connections Section -->
+                <div class="mt-4 pt-3 border-top">
+                    <h6><i class="fas fa-plug"></i> Test Connections</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button id="testTrinoBtn" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-database"></i> Test Trino Connection
+                            </button>
+                            <div id="trinoTestStatus" class="mt-2"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <button id="testDatahubBtn" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-cloud"></i> Test DataHub Connection
+                            </button>
+                            <div id="datahubTestStatus" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Step 2: View Tables -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-table"></i> Step 2: View Tables & Summary</h5>
+                <div class="d-flex align-items-center">
+                    <label for="tablesPerPageSelect" class="form-label me-2 mb-0 small">Show:</label>
+                    <select id="tablesPerPageSelect" class="form-select form-select-sm" style="width: auto;">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                        <option value="all">Show All</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="tablesContainer">
+                    <p class="text-muted">Load schema first to see available tables.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Step 3: Add Metadata -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-edit"></i> Step 3a: Add Metadata Manually</h5>
+            </div>
+            <div class="card-body">
+                <div class="metadata-form">
+                    <div class="mb-3">
+                        <label for="tableSelect" class="form-label">Table</label>
+                        <select id="tableSelect" class="form-select">
+                            <option value="">Select a table</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tableDescription" class="form-label">Table Description (Optional)</label>
+                        <textarea id="tableDescription" class="form-control" rows="2" placeholder="Enter table description"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tableTag" class="form-label">Table Tag (Optional)</label>
+                        <select id="tableTag" class="form-select">
+                            <option value="">Select a tag</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="columnSelect" class="form-label">Column</label>
+                        <select id="columnSelect" class="form-select">
+                            <option value="">Select a column</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="columnDescription" class="form-label">Column Description</label>
+                        <textarea id="columnDescription" class="form-control" rows="3" placeholder="Enter column description"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="columnTag" class="form-label">Column Tag (Optional)</label>
+                        <select id="columnTag" class="form-select">
+                            <option value="">Select a tag</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dataType" class="form-label">Data Type</label>
+                        <select id="dataType" class="form-select">
+                            <option value="string">String</option>
+                            <option value="number">Number</option>
+                            <option value="boolean">Boolean</option>
+                        </select>
+                    </div>
+                    <button id="addMetadataBtn" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add Metadata
+                    </button>
+                </div>
+                <div id="metadataStatus" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-upload"></i> Step 3b: Upload Metadata CSV</h5>
+            </div>
+            
+            <!-- CSV Instructions - COMPLETELY SEPARATE AND PROTECTED -->
+            <div class="alert alert-info csv-instructions-permanent m-3" style="position: relative !important; display: block !important;">
+                <h6><i class="fas fa-info-circle"></i> CSV Format Instructions</h6>
+                <p class="mb-2">Your CSV file must contain the following columns in this exact order:</p>
+                <ul class="mb-2">
+                    <li><strong>SchemaName</strong> - Name of the schema</li>
+                    <li><strong>Domain</strong> - Business domain (optional)</li>
+                    <li><strong>OwnerName</strong> - Data owner/designation (optional)</li>
+                    <li><strong>TableName</strong> - Name of the table</li>
+                    <li><strong>TableDescription</strong> - Description of the table (optional)</li>
+                    <li><strong>TableTag</strong> - Tag for the table (optional)</li>
+                    <li><strong>ColumnName</strong> - Name of the column</li>
+                    <li><strong>ColumnDescription</strong> - Description of the column (required)</li>
+                    <li><strong>ColumnTag</strong> - Tag for the column (optional)</li>
+                    <li><strong>ColumnDataType</strong> - Data type of the column (optional)</li>
+                </ul>
+                <small class="text-muted">See sample_metadata.csv for reference format</small>
+            </div>
+            
+            <div class="card-body">
+                <!-- CSV Upload Section -->
+                <div id="csvUploadSection">
+                    <div class="mb-3">
+                        <input type="file" id="csvFile" class="form-control" accept=".csv">
+                    </div>
+                    <button id="uploadCsvBtn" class="btn btn-info">
+                        <i class="fas fa-file-upload"></i> Upload CSV
+                    </button>
+                    <div id="csvStatus" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Step 4: Current Metadata -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Current Metadata</h5>
+                <div>
+                    <button id="refreshMetadataBtn" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                    <button id="debugMetadataBtn" class="btn btn-sm btn-outline-warning">
+                        <i class="fas fa-bug"></i> Debug
+                    </button>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="metadataView" id="viewCombined" autocomplete="off" checked>
+                        <label class="btn btn-outline-secondary btn-sm" for="viewCombined">Combined</label>
+                        
+                        <input type="radio" class="btn-check" name="metadataView" id="viewManual" autocomplete="off">
+                        <label class="btn btn-outline-info btn-sm" for="viewManual">Manual Only</label>
+                        
+                        <input type="radio" class="btn-check" name="metadataView" id="viewCSV" autocomplete="off">
+                        <label class="btn btn-outline-success btn-sm" for="viewCSV">CSV Only</label>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="metadataStats" class="mb-3"></div>
+                <div id="currentMetadata">
+                    <p class="text-muted">No metadata added yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Step 5: Emit to DataHub -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-paper-plane"></i> Step 4: Emit to DataHub</h5>
+                <div class="d-flex align-items-center">
+                    <label for="emitTablesPerPageSelect" class="form-label me-2 mb-0 small">Show:</label>
+                    <select id="emitTablesPerPageSelect" class="form-select form-select-sm" style="width: auto;">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                        <option value="all">Show All</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <p class="mb-0">Select tables to emit to DataHub:</p>
+                    <button id="refreshTableSelectionBtn" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync"></i> Refresh List
+                    </button>
+                </div>
+                
+                <!-- Selection Controls -->
+                <div class="card bg-light mb-3 selection-controls">
+                    <div class="card-body py-2">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="btn-group" role="group">
+                                    <button id="selectAllBtn" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-check-square"></i> Select All
+                                    </button>
+                                    <button id="deselectAllBtn" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-square"></i> Deselect All
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="btn-group" role="group">
+                                    <button id="selectReadyBtn" class="btn btn-sm btn-outline-success" title="Select tables with metadata">
+                                        <i class="fas fa-check-circle"></i> Ready
+                                    </button>
+                                    <button id="selectBasicBtn" class="btn btn-sm btn-outline-warning" title="Select tables with basic schema only">
+                                        <i class="fas fa-exclamation-triangle"></i> Basic
+                                    </button>
+                                    <button id="selectMetadataOnlyBtn" class="btn btn-sm btn-outline-info" title="Select metadata-only tables">
+                                        <i class="fas fa-info-circle"></i> Metadata Only
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> <strong>Legend:</strong>
+                                    <span class="text-success">🟢 Ready (has metadata)</span> |
+                                    <span class="text-warning">🟡 Basic (schema only)</span> |
+                                    <span class="text-info">🔵 Metadata only</span> |
+                                    <span class="text-muted">⚪ No metadata</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Selection Counter -->
+                <div id="selectionCounter" class="alert alert-secondary py-2 mb-3" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span id="counterText">
+                            <i class="fas fa-list-check"></i> <strong>0</strong> tables selected
+                        </span>
+                        <div id="counterBreakdown" class="small"></div>
+                    </div>
+                </div>
+                
+                <div id="tableSelection" class="mb-3">
+                    <p class="text-muted">Load schema first to see available tables.</p>
+                </div>
+                <button id="emitBtn" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                    <i class="fas fa-rocket"></i> Emit to DataHub
+                </button>
+                <div id="emitStatus" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning"></i> Confirm Metadata Emission
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to emit metadata for the following tables to DataHub:</p>
+                <div id="confirmationSummary"></div>
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-info-circle"></i> This action will push metadata to DataHub. Please review the summary above before proceeding.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel (Edit/Verify)
+                </button>
+                <button type="button" id="confirmEmitBtn" class="btn btn-warning">
+                    <i class="fas fa-rocket"></i> Yes, Emit to DataHub
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Missing Items Modal -->
+<div class="modal fade" id="missingItemsModal" tabindex="-1" aria-labelledby="missingItemsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="missingItemsModalLabel">
+                    <i class="fas fa-download text-info"></i> Load Missing Schemas & Tables
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Your CSV contains schemas and tables that are not currently loaded. You need to load them first before you can emit metadata to DataHub.
+                </div>
+                
+                <div id="missingItemsSummary"></div>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> This will connect to Trino and load the missing schemas/tables. Make sure your Trino connection is working.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" id="loadMissingItemsBtn" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Load Missing Items
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentCatalogs = [];
+let currentSchemas = [];
+let currentTables = [];
+let currentTableColumns = {};
+let currentMetadata = {};
+let selectedCatalog = '';
+let selectedSchema = '';
+
+$(document).ready(function() {
+    // Clear session data on page load to prevent CSV persistence (but don't reload page)
+    $.post('/clear_session', {});
+    
+    // Load tags
+    loadTags();
+    
+    // Periodic check to ensure CSV instructions stay visible
+    setInterval(function() {
+        if ($('.csv-instructions-permanent').length === 0) {
+            console.log('CSV instructions missing! Auto-restoring...');
+            const instructionsHtml = `
+                <div class="alert alert-info csv-instructions-permanent m-3" style="position: relative !important; display: block !important;">
+                    <h6><i class="fas fa-info-circle"></i> CSV Format Instructions</h6>
+                    <p class="mb-2">Your CSV file must contain the following columns in this exact order:</p>
+                    <ul class="mb-2">
+                        <li><strong>SchemaName</strong> - Name of the schema</li>
+                        <li><strong>Domain</strong> - Business domain (optional)</li>
+                        <li><strong>OwnerName</strong> - Data owner/designation (optional)</li>
+                        <li><strong>TableName</strong> - Name of the table</li>
+                        <li><strong>TableDescription</strong> - Description of the table (optional)</li>
+                        <li><strong>TableTag</strong> - Tag for the table (optional)</li>
+                        <li><strong>ColumnName</strong> - Name of the column</li>
+                        <li><strong>ColumnDescription</strong> - Description of the column (required)</li>
+                        <li><strong>ColumnTag</strong> - Tag for the column (optional)</li>
+                        <li><strong>ColumnDataType</strong> - Data type of the column (optional)</li>
+                    </ul>
+                    <small class="text-muted">See sample_metadata.csv for reference format</small>
+                </div>
+            `;
+            
+            // Find the CSV upload card and insert instructions
+            const csvCard = $('h5:contains("Upload Metadata CSV")').closest('.card');
+            if (csvCard.length > 0) {
+                csvCard.find('.card-header').after(instructionsHtml);
+                console.log('CSV instructions auto-restored!');
+            }
+        }
+    }, 1000); // Check every second
+    
+    // Load Catalogs
+    $('#loadCatalogsBtn').click(function() {
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
+        
+        $.post('/load_catalogs', {}, function(response) {
+            if (response.success) {
+                $('#catalogsStatus').html(`<div class="alert alert-success"><i class="fas fa-check"></i> ${response.message}</div>`);
+                currentCatalogs = response.catalogs;
+                updateCatalogSelect();
+                $('#catalogSelection').show();
+            } else {
+                $('#catalogsStatus').html(`<div class="alert alert-danger"><i class="fas fa-times"></i> ${response.message}</div>`);
+            }
+        }).fail(function() {
+            $('#catalogsStatus').html('<div class="alert alert-danger"><i class="fas fa-times"></i> Failed to connect to server</div>');
+        }).always(function() {
+            $('#loadCatalogsBtn').prop('disabled', false).html('<i class="fas fa-sync"></i> Load All Catalogs');
+        });
+    });
+
+    // Load Schemas
+    $('#loadSchemasBtn').click(function() {
+        const catalog = $('#catalogSelect').val();
+        if (!catalog) {
+            alert('Please select a catalog first');
+            return;
+        }
+        
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
+        
+        $.ajax({
+            url: '/load_schemas',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({catalog: catalog}),
+            success: function(response) {
+                if (response.success) {
+                    $('#schemaStatus').html(`<div class="alert alert-success"><i class="fas fa-check"></i> ${response.message}</div>`);
+                    currentSchemas = response.schemas;
+                    selectedCatalog = catalog;
+                    updateSchemaSelect();
+                    $('#schemaSelection').show();
+                    updateStatusIndicators();
+                } else {
+                    $('#schemaStatus').html(`<div class="alert alert-danger"><i class="fas fa-times"></i> ${response.message}</div>`);
+                }
+            }
+        }).always(function() {
+            $('#loadSchemasBtn').prop('disabled', false).html('<i class="fas fa-arrow-right"></i> Load Schemas from Catalog');
+        });
+    });
+
+    // Load Tables
+    $('#loadTablesBtn').click(function() {
+        const schema = $('#schemaSelect').val();
+        if (!schema) {
+            alert('Please select a schema first');
+            return;
+        }
+        
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
+        
+        $.ajax({
+            url: '/load_tables',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({schema: schema}),
+            success: function(response) {
+                if (response.success) {
+                    $('#schemaStatus').html(`<div class="alert alert-success"><i class="fas fa-check"></i> ${response.message}</div>`);
+                    currentTables = response.tables;
+                    currentTableColumns = response.table_columns;
+                    selectedSchema = schema;
+                    updateTablesDisplay();
+                    updateTableSelects();
+                    updateStatusIndicators();
+                } else {
+                    $('#schemaStatus').html(`<div class="alert alert-danger"><i class="fas fa-times"></i> ${response.message}</div>`);
+                }
+            }
+        }).always(function() {
+            $('#loadTablesBtn').prop('disabled', false).html('<i class="fas fa-arrow-right"></i> Load Tables from Schema');
+        });
+    });
+
+    // Table selection change - update columns
+    $('#tableSelect').change(function() {
+        const tableName = $(this).val();
+        updateColumnSelect(tableName);
+    });
+
+    // Test Trino Connection
+    $('#testTrinoBtn').click(function() {
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Testing...');
+        
+        $.post('/test_trino_connection', {}, function(response) {
+            if (response.success) {
+                $('#trinoTestStatus').html(`<small class="text-success"><i class="fas fa-check"></i> ${response.message}</small>`);
+            } else {
+                $('#trinoTestStatus').html(`<small class="text-danger"><i class="fas fa-times"></i> ${response.message}</small>`);
+            }
+        }).fail(function() {
+            $('#trinoTestStatus').html('<small class="text-danger"><i class="fas fa-times"></i> Failed to test connection</small>');
+        }).always(function() {
+            $('#testTrinoBtn').prop('disabled', false).html('<i class="fas fa-database"></i> Test Trino Connection');
+        });
+    });
+
+    // Test DataHub Connection
+    $('#testDatahubBtn').click(function() {
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Testing...');
+        
+        $.post('/test_datahub_connection', {}, function(response) {
+            if (response.success) {
+                $('#datahubTestStatus').html(`<small class="text-success"><i class="fas fa-check"></i> ${response.message}</small>`);
+            } else {
+                $('#datahubTestStatus').html(`<small class="text-danger"><i class="fas fa-times"></i> ${response.message}</small>`);
+            }
+        }).fail(function() {
+            $('#datahubTestStatus').html('<small class="text-danger"><i class="fas fa-times"></i> Failed to test connection</small>');
+        }).always(function() {
+            $('#testDatahubBtn').prop('disabled', false).html('<i class="fas fa-cloud"></i> Test DataHub Connection');
+        });
+    });
+
+    // Add Metadata
+    $('#addMetadataBtn').click(function() {
+        const data = {
+            table_name: $('#tableSelect').val(),
+            table_description: $('#tableDescription').val(),
+            table_tag: $('#tableTag').val(),
+            column_name: $('#columnSelect').val(),
+            column_description: $('#columnDescription').val(),
+            column_tag: $('#columnTag').val(),
+            data_type: $('#dataType').val()
+        };
+
+        if (!data.table_name || !data.column_name || !data.column_description) {
+            $('#metadataStatus').html('<div class="alert alert-warning">Please fill all required fields (Table, Column, Column Description)</div>');
+            return;
+        }
+
+        $.ajax({
+            url: '/add_metadata',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    $('#metadataStatus').html(`<div class="alert alert-success">${response.message}</div>`);
+                    $('#tableDescription').val('');
+                    $('#columnDescription').val('');
+                    $('#tableTag').val('');
+                    $('#columnTag').val('');
+                    loadCurrentMetadata();
+                    updateStatusIndicators();
+                    updateEmitTableSelection();
+                } else {
+                    $('#metadataStatus').html(`<div class="alert alert-danger">${response.message}</div>`);
+                }
+            }
+        });
+    });
+
+    // Upload CSV
+    $('#uploadCsvBtn').click(function() {
+        const fileInput = $('#csvFile')[0];
+        if (!fileInput.files.length) {
+            $('#csvStatus').html('<div class="alert alert-warning">Please select a CSV file</div>');
+            return;
+        }
+
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        $.ajax({
+            url: '/upload_metadata',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    let statusMessage = `<div class="alert alert-success">${response.message}</div>`;
+                    
+                    // Check if we need to load missing schemas/tables
+                    if (response.requires_loading && response.missing_items) {
+                        showMissingItemsDialog(response.missing_items);
+                        statusMessage += '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> <strong>Action Required:</strong> Some schemas/tables from your CSV are not loaded yet. Please use the dialog to load them first.</div>';
+                    } else {
+                        // No missing items, proceed normally
+                        loadCurrentMetadata();
+                        updateStatusIndicators();
+                        updateEmitTableSelection();
+                        
+                        // Show CSV data immediately
+                        setTimeout(function() {
+                            $('#viewCSV').prop('checked', true);
+                            loadCurrentMetadata();
+                        }, 500);
+                    }
+                    
+                    $('#csvStatus').html(statusMessage);
+                } else {
+                    $('#csvStatus').html(`<div class="alert alert-danger">${response.message}</div>`);
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#csvStatus').html(`<div class="alert alert-danger">Upload failed: ${error}</div>`);
+            }
+        }).always(function() {
+            $('#uploadCsvBtn').prop('disabled', false).html('<i class="fas fa-file-upload"></i> Upload CSV');
+        });
+    });
+
+    // Metadata view toggle
+    $('input[name="metadataView"]').change(function() {
+        loadCurrentMetadata();
+    });
+
+    // Refresh metadata
+    $('#refreshMetadataBtn').click(function() {
+        $(this).html('<i class="fas fa-spinner fa-spin"></i>');
+        loadCurrentMetadata();
+        setTimeout(() => {
+            $(this).html('<i class="fas fa-sync"></i> Refresh');
+        }, 1000);
+    });
+
+    // Debug metadata
+    $('#debugMetadataBtn').click(function() {
+        $.get('/debug_metadata', function(response) {
+            console.log('Debug Metadata:', response);
+            alert(`Debug Info (check console for details):
+Selected Catalog: ${response.selected_catalog}
+Selected Schema: ${response.selected_schema}
+Current Tables: ${response.current_tables.length}
+Manual Metadata Tables: ${response.manual_metadata_keys.length}
+CSV Metadata Tables: ${response.uploaded_metadata_keys.length}
+
+Manual Keys: ${response.manual_metadata_keys.join(', ')}
+CSV Keys: ${response.uploaded_metadata_keys.join(', ')}`);
+        });
+    });
+
+    // Refresh table selection
+    $('#refreshTableSelectionBtn').click(function() {
+        $(this).html('<i class="fas fa-spinner fa-spin"></i>');
+        updateEmitTableSelection();
+        setTimeout(() => {
+            $(this).html('<i class="fas fa-sync"></i> Refresh List');
+        }, 1000);
+    });
+
+    // Select All Tables
+    $('#selectAllBtn').click(function() {
+        $('input[name="tableCheckbox"]').prop('checked', true);
+        updateSelectionCounter();
+        $(this).addClass('btn-success').removeClass('btn-outline-success');
+        setTimeout(() => {
+            $(this).removeClass('btn-success').addClass('btn-outline-success');
+        }, 200);
+    });
+
+    // Deselect All Tables
+    $('#deselectAllBtn').click(function() {
+        $('input[name="tableCheckbox"]').prop('checked', false);
+        updateSelectionCounter();
+        $(this).addClass('btn-danger').removeClass('btn-outline-danger');
+        setTimeout(() => {
+            $(this).removeClass('btn-danger').addClass('btn-outline-danger');
+        }, 200);
+    });
+
+    // Select Ready Tables (with metadata)
+    $('#selectReadyBtn').click(function() {
+        $('input[name="tableCheckbox"]').each(function() {
+            const label = $(this).next('label');
+            if (label.hasClass('text-success')) {
+                $(this).prop('checked', true);
+            }
+        });
+        updateSelectionCounter();
+        $(this).addClass('btn-success').removeClass('btn-outline-success');
+        setTimeout(() => {
+            $(this).removeClass('btn-success').addClass('btn-outline-success');
+        }, 200);
+    });
+
+    // Select Basic Tables (schema only)
+    $('#selectBasicBtn').click(function() {
+        $('input[name="tableCheckbox"]').each(function() {
+            const label = $(this).next('label');
+            if (label.hasClass('text-warning')) {
+                $(this).prop('checked', true);
+            }
+        });
+        updateSelectionCounter();
+        $(this).addClass('btn-warning').removeClass('btn-outline-warning');
+        setTimeout(() => {
+            $(this).removeClass('btn-warning').addClass('btn-outline-warning');
+        }, 200);
+    });
+
+    // Select Metadata Only Tables
+    $('#selectMetadataOnlyBtn').click(function() {
+        $('input[name="tableCheckbox"]').each(function() {
+            const label = $(this).next('label');
+            if (label.hasClass('text-info')) {
+                $(this).prop('checked', true);
+            }
+        });
+        updateSelectionCounter();
+        $(this).addClass('btn-info').removeClass('btn-outline-info');
+        setTimeout(() => {
+            $(this).removeClass('btn-info').addClass('btn-outline-info');
+        }, 200);
+    });
+
+    // Update counter when checkboxes change
+    $(document).on('change', 'input[name="tableCheckbox"]', function() {
+        updateSelectionCounter();
+    });
+
+    // Clear all session data
+    $('#clearSessionBtn').click(function(e) {
+        e.preventDefault(); // Prevent any default behavior
+        
+        if (confirm('Are you sure you want to clear all data? This will reset everything including uploaded CSV data.')) {
+            $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Clearing...');
+            
+            // Debug: Check if CSV instructions exist before clearing
+            console.log('CSV instructions before clear:', $('.csv-instructions-permanent').length);
+            console.log('CSV instructions HTML before:', $('.csv-instructions-permanent').html());
+            
+            $.post('/clear_session', {}, function(response) {
+                if (response.success) {
+                    // Reset all UI elements
+                    currentCatalogs = [];
+                    currentSchemas = [];
+                    currentTables = [];
+                    currentTableColumns = {};
+                    selectedCatalog = '';
+                    selectedSchema = '';
+                    currentPage = 1;
+                    emitCurrentPage = 1;
+                    
+                    // Clear all displays
+                    $('#catalogsStatus').html('');
+                    $('#schemaStatus').html('');
+                    $('#catalogSelection').hide();
+                    $('#schemaSelection').hide();
+                    $('#tablesContainer').html('<p class="text-muted">Load catalogs first to see available tables.</p>');
+                    $('#currentMetadata').html('<p class="text-muted">No metadata added yet.</p>');
+                    $('#metadataStats').html('');
+                    $('#tableSelection').html('<p class="text-muted">Load schema first to see available tables.</p>');
+                    $('#selectionCounter').hide();
+                    $('#emitStatus').html('');
+                    $('#csvStatus').empty();
+                    $('#metadataStatus').html('');
+                    $('#trinoTestStatus').html('');
+                    $('#datahubTestStatus').html('');
+                    
+                    // Reset form fields
+                    $('#catalogSelect').html('<option value="">Choose a catalog</option>');
+                    $('#schemaSelect').html('<option value="">Choose a schema</option>');
+                    $('#tableSelect').html('<option value="">Select a table</option>');
+                    $('#columnSelect').html('<option value="">Select a column</option>');
+                    $('#csvFile').val('');
+                    $('#tableDescription').val('');
+                    $('#columnDescription').val('');
+                    $('#tableTag').val('');
+                    $('#columnTag').val('');
+                    
+                    // Reset pagination selectors
+                    $('#tablesPerPageSelect').val('10');
+                    $('#emitTablesPerPageSelect').val('10');
+                    tablesPerPage = 10;
+                    emitTablesPerPage = 10;
+                    
+                    // Update status indicators
+                    updateStatusIndicators();
+                    
+                    // Clear emit table selection
+                    updateEmitTableSelection();
+                    
+                    // Debug: Check if CSV instructions exist after clearing
+                    console.log('CSV instructions after clear:', $('.csv-instructions-permanent').length);
+                    console.log('CSV instructions HTML after:', $('.csv-instructions-permanent').html());
+                    
+                    // Force restore CSV instructions if they disappeared
+                    if ($('.csv-instructions-permanent').length === 0) {
+                        console.log('CSV instructions disappeared! Restoring...');
+                        const instructionsHtml = `
+                            <div class="alert alert-info csv-instructions-permanent m-3" style="position: relative !important; display: block !important;">
+                                <h6><i class="fas fa-info-circle"></i> CSV Format Instructions</h6>
+                                <p class="mb-2">Your CSV file must contain the following columns in this exact order:</p>
+                                <ul class="mb-2">
+                                    <li><strong>SchemaName</strong> - Name of the schema</li>
+                                    <li><strong>Domain</strong> - Business domain (optional)</li>
+                                    <li><strong>OwnerName</strong> - Data owner/designation (optional)</li>
+                                    <li><strong>TableName</strong> - Name of the table</li>
+                                    <li><strong>TableDescription</strong> - Description of the table (optional)</li>
+                                    <li><strong>TableTag</strong> - Tag for the table (optional)</li>
+                                    <li><strong>ColumnName</strong> - Name of the column</li>
+                                    <li><strong>ColumnDescription</strong> - Description of the column (required)</li>
+                                    <li><strong>ColumnTag</strong> - Tag for the column (optional)</li>
+                                    <li><strong>ColumnDataType</strong> - Data type of the column (optional)</li>
+                                </ul>
+                                <small class="text-muted">See sample_metadata.csv for reference format</small>
+                            </div>
+                        `;
+                        
+                        // Find the CSV upload card and insert instructions
+                        const csvCard = $('h5:contains("Upload Metadata CSV")').closest('.card');
+                        if (csvCard.length > 0) {
+                            csvCard.find('.card-header').after(instructionsHtml);
+                            console.log('CSV instructions restored!');
+                        }
+                    }
+                    
+                    // Show success message
+                    const alertHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                        '<i class="fas fa-check"></i> All data cleared successfully!' +
+                        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                        '</div>';
+                    $('.container').prepend(alertHtml);
+                    
+                    // Auto-dismiss after 3 seconds
+                    setTimeout(() => {
+                        $('.alert').alert('close');
+                    }, 3000);
+                }
+            }).always(function() {
+                $('#clearSessionBtn').prop('disabled', false).html('<i class="fas fa-trash"></i> Clear All Data');
+            });
+        }
+    });
+
+    // Tables per page selector
+    $('#tablesPerPageSelect').change(function() {
+        const value = $(this).val();
+        if (value === 'all') {
+            tablesPerPage = currentTables.length || 10;
+        } else {
+            tablesPerPage = parseInt(value);
+        }
+        currentPage = 1; // Reset to first page
+        updateTablesDisplay();
+    });
+
+    // Emit tables per page selector
+    $('#emitTablesPerPageSelect').change(function() {
+        const value = $(this).val();
+        if (value === 'all') {
+            emitTablesPerPage = 1000; // Large number to show all
+        } else {
+            emitTablesPerPage = parseInt(value);
+        }
+        emitCurrentPage = 1; // Reset to first page
+        updateEmitTableSelection();
+    });
+
+    // Emit to DataHub - Show confirmation modal
+    $('#emitBtn').click(function() {
+        // Validate prerequisites
+        const validationResult = validateEmissionPrerequisites();
+        if (!validationResult.valid) {
+            $('#emitStatus').html(`<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${validationResult.message}</div>`);
+            return false;
+        }
+
+        const selectedTables = [];
+        $('input[name="tableCheckbox"]:checked').each(function() {
+            selectedTables.push($(this).val());
+        });
+
+        if (selectedTables.length === 0) {
+            $('#emitStatus').html('<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Please select at least one table</div>');
+            return false;
+        }
+
+        // Generate confirmation summary
+        generateConfirmationSummary(selectedTables);
+    });
+
+    // Actual emit after confirmation
+    $('#confirmEmitBtn').click(function() {
+        const selectedTables = [];
+        $('input[name="tableCheckbox"]:checked').each(function() {
+            selectedTables.push($(this).val());
+        });
+
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Emitting...');
+        $('#confirmModal').modal('hide');
+        
+        // Show progress indicator
+        $('#emitStatus').html(`
+            <div class="alert alert-info">
+                <i class="fas fa-spinner fa-spin"></i> Emitting metadata for ${selectedTables.length} table(s) to DataHub...
+                <div class="progress mt-2">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                </div>
+            </div>
+        `);
+
+        $.ajax({
+            url: '/emit_to_datahub',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({tables: selectedTables}),
+            success: function(response) {
+                let message = '';
+                
+                if (response.success) {
+                    message += `<div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> <strong>Emission Complete!</strong><br>
+                        ${response.message}
+                    </div>`;
+                    
+                    if (response.successful && response.successful.length > 0) {
+                        message += `<div class="alert alert-success">
+                            <strong><i class="fas fa-check"></i> Successfully Emitted (${response.successful.length}):</strong><br>
+                            ${response.successful.map(table => `• ${table}`).join('<br>')}
+                        </div>`;
+                    }
+                    
+                    if (response.failed && response.failed.length > 0) {
+                        message += `<div class="alert alert-warning">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Failed to Emit (${response.failed.length}):</strong><br>
+                            ${response.failed.map(error => `• ${error}`).join('<br>')}
+                        </div>`;
+                    }
+                } else {
+                    message = `<div class="alert alert-danger">
+                        <i class="fas fa-times-circle"></i> <strong>Emission Failed!</strong><br>
+                        ${response.message}
+                    </div>`;
+                }
+                
+                $('#emitStatus').html(message);
+            },
+            error: function(xhr, status, error) {
+                $('#emitStatus').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle"></i> <strong>Connection Error!</strong><br>
+                        Failed to communicate with the server: ${error}
+                    </div>
+                `);
+            }
+        }).always(function() {
+            $('#confirmEmitBtn').prop('disabled', false).html('<i class="fas fa-rocket"></i> Yes, Emit to DataHub');
+        });
+    });
+});
+
+function loadTags() {
+    $.get('/get_tags', function(response) {
+        // Update table tags
+        let tableTagOptions = '<option value="">Select a tag</option>';
+        response.table_tags.forEach(function(tag) {
+            tableTagOptions += `<option value="${tag}">${tag}</option>`;
+        });
+        $('#tableTag').html(tableTagOptions);
+
+        // Update column tags
+        let columnTagOptions = '<option value="">Select a tag</option>';
+        response.column_tags.forEach(function(tag) {
+            columnTagOptions += `<option value="${tag}">${tag}</option>`;
+        });
+        $('#columnTag').html(columnTagOptions);
+    });
+}
+
+function updateCatalogSelect() {
+    let options = '<option value="">Choose a catalog</option>';
+    currentCatalogs.forEach(function(catalog) {
+        options += `<option value="${catalog}">${catalog}</option>`;
+    });
+    $('#catalogSelect').html(options);
+}
+
+function updateSchemaSelect() {
+    let options = '<option value="">Choose a schema</option>';
+    currentSchemas.forEach(function(schema) {
+        const isSelected = schema === selectedSchema ? 'selected' : '';
+        options += `<option value="${schema}" ${isSelected}>${schema}</option>`;
+    });
+    $('#schemaSelect').html(options);
+}
+
+function syncWithAutoDiscovery() {
+    // Sync frontend variables with backend after auto-discovery
+    $.get('/get_discovery_status', function(response) {
+        if (response.selected_catalog && response.selected_catalog !== selectedCatalog) {
+            selectedCatalog = response.selected_catalog;
+            $('#catalogSelect').val(selectedCatalog);
+            $('#catalogSelection').show();
+        }
+        
+        if (response.selected_schema && response.selected_schema !== selectedSchema) {
+            selectedSchema = response.selected_schema;
+            $('#schemaSelect').val(selectedSchema);
+            $('#schemaSelection').show();
+        }
+        
+        if (response.current_schemas && response.current_schemas.length > 0) {
+            currentSchemas = response.current_schemas;
+            updateSchemaSelect();
+        }
+        
+        if (response.current_tables && response.current_tables.length > 0) {
+            currentTables = response.current_tables;
+            updateTablesDisplay();
+            updateTableSelects();
+        }
+        
+        updateStatusIndicators();
+        console.log('Synced with auto-discovery results');
+    });
+}
+
+function updateColumnSelect(tableName) {
+    let options = '<option value="">Select a column</option>';
+    if (tableName && currentTableColumns[tableName]) {
+        currentTableColumns[tableName].forEach(function(column) {
+            options += `<option value="${column.name}">${column.name} (${column.type})</option>`;
+        });
+    }
+    $('#columnSelect').html(options);
+}
+
+function validateEmissionPrerequisites() {
+    if (!selectedCatalog) {
+        return {
+            valid: false,
+            message: 'Please load and select a catalog first'
+        };
+    }
+    
+    if (!selectedSchema) {
+        return {
+            valid: false,
+            message: 'Please load and select a schema first'
+        };
+    }
+    
+    if (currentTables.length === 0) {
+        return {
+            valid: false,
+            message: 'Please load tables from the selected schema first'
+        };
+    }
+    
+    return {
+        valid: true,
+        message: 'All prerequisites met'
+    };
+}
+
+function generateConfirmationSummary(selectedTables) {
+    $.get('/get_metadata', function(response) {
+        let html = '<div class="alert alert-info mb-3">';
+        html += `<strong>Catalog:</strong> ${selectedCatalog}<br>`;
+        html += `<strong>Schema:</strong> ${selectedSchema}<br>`;
+        html += `<strong>Tables to emit:</strong> ${selectedTables.length}`;
+        html += '</div>';
+        
+        html += '<div class="table-responsive"><table class="table table-sm">';
+        html += '<thead><tr><th>Table</th><th>Columns with Metadata</th><th>Tags</th><th>Status</th></tr></thead><tbody>';
+        
+        selectedTables.forEach(function(table) {
+            const tableKey = `${selectedSchema}.${table}`;
+            const metadata = response.metadata[tableKey];
+            
+            html += `<tr><td><strong>${table}</strong>`;
+            if (metadata && metadata.table_info && metadata.table_info.description) {
+                html += `<br><small class="text-muted">${metadata.table_info.description}</small>`;
+            }
+            html += '</td><td>';
+            
+            let hasMetadata = false;
+            if (metadata && metadata.columns) {
+                const columnCount = Object.keys(metadata.columns).length;
+                if (columnCount > 0) {
+                    hasMetadata = true;
+                    html += `${columnCount} columns with metadata<br>`;
+                    Object.keys(metadata.columns).forEach(function(col) {
+                        html += `<small>• ${col}</small><br>`;
+                    });
+                }
+            }
+            
+            if (!hasMetadata) {
+                html += '<small class="text-warning">⚠️ No column metadata - will use basic schema only</small>';
+            }
+            
+            html += '</td><td>';
+            if (metadata && metadata.table_info && metadata.table_info.tag) {
+                html += `<span class="badge bg-primary">${metadata.table_info.tag}</span>`;
+            } else {
+                html += '<small class="text-muted">No tags</small>';
+            }
+            html += '</td><td>';
+            
+            if (hasMetadata) {
+                html += '<span class="badge bg-success">Ready</span>';
+            } else {
+                html += '<span class="badge bg-warning">Basic Schema Only</span>';
+            }
+            html += '</td></tr>';
+        });
+        
+        html += '</tbody></table></div>';
+        
+        // Add warning if some tables have no metadata
+        const tablesWithoutMetadata = selectedTables.filter(table => {
+            const tableKey = `${selectedSchema}.${table}`;
+            const metadata = response.metadata[tableKey];
+            return !metadata || !metadata.columns || Object.keys(metadata.columns).length === 0;
+        });
+        
+        if (tablesWithoutMetadata.length > 0) {
+            html += '<div class="alert alert-warning">';
+            html += '<i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> ';
+            html += `${tablesWithoutMetadata.length} table(s) have no custom metadata and will be emitted with basic schema information only.`;
+            html += '</div>';
+        }
+        
+        $('#confirmationSummary').html(html);
+    });
+}
+
+function updateStatusIndicators() {
+    // Update catalog status
+    if (selectedCatalog) {
+        $('#statusCatalog').html(`<span class="text-success">${selectedCatalog}</span>`);
+    } else {
+        $('#statusCatalog').html('<span class="text-muted">Not selected</span>');
+    }
+    
+    // Update schema status
+    if (selectedSchema) {
+        $('#statusSchema').html(`<span class="text-success">${selectedSchema}</span>`);
+    } else {
+        $('#statusSchema').html('<span class="text-muted">Not selected</span>');
+    }
+    
+    // Update tables count
+    if (currentTables.length > 0) {
+        $('#statusTables').html(`<span class="text-success">${currentTables.length}</span>`);
+    } else {
+        $('#statusTables').html('<span class="text-muted">0</span>');
+    }
+    
+    // Update metadata count
+    $.get('/get_metadata', function(response) {
+        const metadataCount = Object.keys(response.metadata).length;
+        if (metadataCount > 0) {
+            $('#statusMetadata').html(`<span class="text-success">${metadataCount}</span>`);
+        } else {
+            $('#statusMetadata').html('<span class="text-muted">0</span>');
+        }
+    });
+}
+
+let currentPage = 1;
+let tablesPerPage = 10;
+
+// Emit section pagination
+let emitCurrentPage = 1;
+let emitTablesPerPage = 10;
+
+function updateTablesDisplay() {
+    if (currentTables.length === 0) {
+        $('#tablesContainer').html('<p class="text-muted">No tables found.</p>');
+        return;
+    }
+
+    // Calculate pagination
+    const showAll = tablesPerPage >= currentTables.length;
+    const totalPages = showAll ? 1 : Math.ceil(currentTables.length / tablesPerPage);
+    const startIndex = showAll ? 0 : (currentPage - 1) * tablesPerPage;
+    const endIndex = showAll ? currentTables.length : Math.min(startIndex + tablesPerPage, currentTables.length);
+    const tablesToShow = currentTables.slice(startIndex, endIndex);
+
+    let html = '';
+    
+    // Add pagination info and controls at top
+    if (currentTables.length > tablesPerPage && !showAll) {
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <span class="badge bg-primary">${currentTables.length} total tables</span>
+                    <span class="text-muted">Showing ${startIndex + 1}-${endIndex} of ${currentTables.length}</span>
+                </div>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" disabled>
+                        Page ${currentPage} of ${totalPages}
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Add tables grid
+    html += '<div class="row">';
+    tablesToShow.forEach(function(table, index) {
+        const globalIndex = startIndex + index;
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="table-summary">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0"><i class="fas fa-table"></i> ${table}</h6>
+                        <small class="text-muted">#${globalIndex + 1}</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadTableSummary('${table}', ${globalIndex})">
+                        <i class="fas fa-info-circle"></i> View Summary
+                    </button>
+                    <div id="summary-${globalIndex}" class="mt-2"></div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+
+    // Add pagination controls at bottom if needed
+    if (currentTables.length > tablesPerPage && !showAll) {
+        html += `
+            <div class="d-flex justify-content-center mt-3">
+                <nav>
+                    <ul class="pagination pagination-sm">
+                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+                        </li>
+        `;
+        
+        // Add page numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>
+            `;
+        }
+        
+        html += `
+                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        `;
+    }
+
+    $('#tablesContainer').html(html);
+}
+
+function changePage(newPage) {
+    const totalPages = Math.ceil(currentTables.length / tablesPerPage);
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        updateTablesDisplay();
+        
+        // Scroll to top of tables section
+        document.getElementById('tablesContainer').scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+        });
+    }
+}
+
+function changeEmitPage(newPage) {
+    // Get current total tables count from the DOM or estimate
+    const totalTables = $('input[name="tableCheckbox"]').length;
+    const totalPages = Math.ceil(totalTables / emitTablesPerPage);
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        emitCurrentPage = newPage;
+        updateEmitTableSelection();
+        
+        // Scroll to top of emit section
+        document.getElementById('tableSelection').scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+        });
+    }
+}
+
+function updateTableSelects() {
+    let options = '<option value="">Select a table</option>';
+    currentTables.forEach(function(table) {
+        options += `<option value="${table}">${table}</option>`;
+    });
+    $('#tableSelect').html(options);
+
+    // Update table selection for emit - include all tables with metadata
+    updateEmitTableSelection();
+}
+
+function updateEmitTableSelection() {
+    $.get('/get_metadata_with_source', function(response) {
+        let allTables = new Set();
+        
+        // Add tables from current loaded tables
+        currentTables.forEach(function(table) {
+            allTables.add(table);
+        });
+        
+        // Add tables from metadata (both manual and CSV)
+        Object.keys(response.combined).forEach(function(tableKey) {
+            const tableName = tableKey.split('.').pop();
+            const schemaName = tableKey.split('.')[0];
+            
+            // Only include tables from the currently selected schema
+            if (schemaName === selectedSchema) {
+                allTables.add(tableName);
+            }
+        });
+        
+        const allTablesArray = Array.from(allTables).sort();
+        
+        let checkboxes = '';
+        if (allTablesArray.length === 0) {
+            checkboxes = '<p class="text-muted">Load schema first to see available tables.</p>';
+        } else {
+            // Calculate pagination for emit section
+            const showAll = emitTablesPerPage >= allTablesArray.length;
+            const totalPages = showAll ? 1 : Math.ceil(allTablesArray.length / emitTablesPerPage);
+            const startIndex = showAll ? 0 : (emitCurrentPage - 1) * emitTablesPerPage;
+            const endIndex = showAll ? allTablesArray.length : Math.min(startIndex + emitTablesPerPage, allTablesArray.length);
+            const tablesToShow = allTablesArray.slice(startIndex, endIndex);
+            // Add pagination info and controls at top
+            if (allTablesArray.length > emitTablesPerPage && !showAll) {
+                checkboxes += `
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-primary">${allTablesArray.length} total tables</span>
+                            <span class="text-muted">Showing ${startIndex + 1}-${endIndex} of ${allTablesArray.length}</span>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="changeEmitPage(${emitCurrentPage - 1})" ${emitCurrentPage === 1 ? 'disabled' : ''}>
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" disabled>
+                                Page ${emitCurrentPage} of ${totalPages}
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="changeEmitPage(${emitCurrentPage + 1})" ${emitCurrentPage === totalPages ? 'disabled' : ''}>
+                                Next <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Count tables by status (for all tables, not just current page)
+            let readyCount = 0, basicCount = 0, metadataOnlyCount = 0, noMetadataCount = 0;
+            
+            allTablesArray.forEach(function(table) {
+                const tableKey = `${selectedSchema}.${table}`;
+                const hasMetadata = response.combined[tableKey] && 
+                                  response.combined[tableKey].columns && 
+                                  Object.keys(response.combined[tableKey].columns).length > 0;
+                const isLoaded = currentTables.includes(table);
+                
+                if (hasMetadata && isLoaded) readyCount++;
+                else if (isLoaded) basicCount++;
+                else if (hasMetadata) metadataOnlyCount++;
+                else noMetadataCount++;
+            });
+            
+            // Add summary header
+            checkboxes += `
+                <div class="alert alert-light border mb-3">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <div class="text-success"><i class="fas fa-check-circle"></i></div>
+                            <strong>${readyCount}</strong><br>
+                            <small>Ready</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-warning"><i class="fas fa-exclamation-triangle"></i></div>
+                            <strong>${basicCount}</strong><br>
+                            <small>Basic</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-info"><i class="fas fa-info-circle"></i></div>
+                            <strong>${metadataOnlyCount}</strong><br>
+                            <small>Metadata Only</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-muted"><i class="fas fa-question-circle"></i></div>
+                            <strong>${noMetadataCount}</strong><br>
+                            <small>No Metadata</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Add tables for current page
+            tablesToShow.forEach(function(table, index) {
+                const globalIndex = startIndex + index;
+                const tableKey = `${selectedSchema}.${table}`;
+                const hasMetadata = response.combined[tableKey] && 
+                                  response.combined[tableKey].columns && 
+                                  Object.keys(response.combined[tableKey].columns).length > 0;
+                
+                const isLoaded = currentTables.includes(table);
+                
+                let labelClass = '';
+                let statusIcon = '';
+                let statusText = '';
+                
+                if (hasMetadata && isLoaded) {
+                    labelClass = 'text-success';
+                    statusIcon = '<i class="fas fa-check-circle text-success"></i>';
+                    statusText = ' (Ready - Has metadata)';
+                } else if (isLoaded) {
+                    labelClass = 'text-warning';
+                    statusIcon = '<i class="fas fa-exclamation-triangle text-warning"></i>';
+                    statusText = ' (Basic schema only)';
+                } else if (hasMetadata) {
+                    labelClass = 'text-info';
+                    statusIcon = '<i class="fas fa-info-circle text-info"></i>';
+                    statusText = ' (Metadata only - table not loaded)';
+                } else {
+                    labelClass = 'text-muted';
+                    statusIcon = '<i class="fas fa-question-circle text-muted"></i>';
+                    statusText = ' (No metadata)';
+                }
+                
+                checkboxes += `
+                    <div class="form-check p-2 border rounded mb-2 table-checkbox-item" data-status="${labelClass}">
+                        <input class="form-check-input" type="checkbox" name="tableCheckbox" value="${table}" id="table-${table}">
+                        <label class="form-check-label ${labelClass} w-100" for="table-${table}" style="cursor: pointer;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>${statusIcon} <strong>${table}</strong></span>
+                                <div class="text-end">
+                                    <small class="text-muted">#${globalIndex + 1}</small><br>
+                                    <small class="text-muted">${statusText.replace(' (', '').replace(')', '')}</small>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                `;
+            });
+            
+            // Add pagination controls at bottom if needed
+            if (allTablesArray.length > emitTablesPerPage && !showAll) {
+                checkboxes += `
+                    <div class="d-flex justify-content-center mt-3">
+                        <nav>
+                            <ul class="pagination pagination-sm">
+                                <li class="page-item ${emitCurrentPage === 1 ? 'disabled' : ''}">
+                                    <a class="page-link" href="#" onclick="changeEmitPage(${emitCurrentPage - 1})">Previous</a>
+                                </li>
+                `;
+                
+                // Add page numbers
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, emitCurrentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    checkboxes += `
+                        <li class="page-item ${i === emitCurrentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changeEmitPage(${i})">${i}</a>
+                        </li>
+                    `;
+                }
+                
+                checkboxes += `
+                                <li class="page-item ${emitCurrentPage === totalPages ? 'disabled' : ''}">
+                                    <a class="page-link" href="#" onclick="changeEmitPage(${emitCurrentPage + 1})">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                `;
+            }
+        }
+        $('#tableSelection').html(checkboxes);
+        
+        // Initialize counter
+        updateSelectionCounter();
+    });
+}
+
+function updateSelectionCounter() {
+    const totalCheckboxes = $('input[name="tableCheckbox"]').length;
+    const selectedCheckboxes = $('input[name="tableCheckbox"]:checked').length;
+    
+    if (totalCheckboxes === 0) {
+        $('#selectionCounter').hide();
+        return;
+    }
+    
+    $('#selectionCounter').show();
+    
+    // Update main counter
+    $('#counterText').html(`
+        <i class="fas fa-list-check"></i> <strong>${selectedCheckboxes}</strong> of <strong>${totalCheckboxes}</strong> tables selected
+    `);
+    
+    // Count by category
+    let readyCount = 0;
+    let basicCount = 0;
+    let metadataOnlyCount = 0;
+    let noMetadataCount = 0;
+    
+    let selectedReadyCount = 0;
+    let selectedBasicCount = 0;
+    let selectedMetadataOnlyCount = 0;
+    let selectedNoMetadataCount = 0;
+    
+    $('input[name="tableCheckbox"]').each(function() {
+        const label = $(this).next('label');
+        const isChecked = $(this).is(':checked');
+        
+        if (label.hasClass('text-success')) {
+            readyCount++;
+            if (isChecked) selectedReadyCount++;
+        } else if (label.hasClass('text-warning')) {
+            basicCount++;
+            if (isChecked) selectedBasicCount++;
+        } else if (label.hasClass('text-info')) {
+            metadataOnlyCount++;
+            if (isChecked) selectedMetadataOnlyCount++;
+        } else {
+            noMetadataCount++;
+            if (isChecked) selectedNoMetadataCount++;
+        }
+    });
+    
+    // Update breakdown
+    let breakdown = [];
+    if (selectedReadyCount > 0) {
+        breakdown.push(`<span class="text-success">🟢 ${selectedReadyCount} Ready</span>`);
+    }
+    if (selectedBasicCount > 0) {
+        breakdown.push(`<span class="text-warning">🟡 ${selectedBasicCount} Basic</span>`);
+    }
+    if (selectedMetadataOnlyCount > 0) {
+        breakdown.push(`<span class="text-info">🔵 ${selectedMetadataOnlyCount} Metadata Only</span>`);
+    }
+    if (selectedNoMetadataCount > 0) {
+        breakdown.push(`<span class="text-muted">⚪ ${selectedNoMetadataCount} No Metadata</span>`);
+    }
+    
+    $('#counterBreakdown').html(breakdown.join(' | '));
+    
+    // Update counter color based on selection
+    const counter = $('#selectionCounter');
+    counter.removeClass('alert-secondary alert-success alert-warning alert-info');
+    
+    if (selectedCheckboxes === 0) {
+        counter.addClass('alert-secondary');
+    } else if (selectedReadyCount > 0) {
+        counter.addClass('alert-success');
+    } else if (selectedBasicCount > 0) {
+        counter.addClass('alert-warning');
+    } else {
+        counter.addClass('alert-info');
+    }
+}
+
+function loadTableSummary(tableName, index) {
+    $(`#summary-${index}`).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
+    
+    $.get(`/get_table_summary/${tableName}`, function(response) {
+        if (response.success) {
+            const summary = response.summary;
+            let html = `
+                <div class="mt-2">
+                    <small><strong>Rows:</strong> ${summary.row_count.toLocaleString()}</small><br>
+                    <small><strong>Columns:</strong> ${summary.columns.length}</small>
+                    <div class="mt-2">
+                        <small><strong>Schema:</strong></small>
+                        <ul class="list-unstyled" style="font-size: 0.8em;">
+            `;
+            summary.columns.forEach(function(col) {
+                html += `<li>• ${col.name} (${col.type})</li>`;
+            });
+            html += '</ul></div></div>';
+            $(`#summary-${index}`).html(html);
+        } else {
+            $(`#summary-${index}`).html('<small class="text-danger">Failed to load summary</small>');
+        }
+    });
+}
+
+function loadCurrentMetadata() {
+    const viewType = $('input[name="metadataView"]:checked').attr('id');
+    
+    $.get('/get_metadata_with_source', function(response) {
+        let dataToShow = {};
+        let statsHtml = '';
+        
+        // Determine which data to show based on view type
+        switch(viewType) {
+            case 'viewManual':
+                dataToShow = response.manual;
+                statsHtml = `<div class="alert alert-info"><i class="fas fa-hand-paper"></i> <strong>Manual Metadata:</strong> ${Object.keys(dataToShow).length} tables</div>`;
+                break;
+            case 'viewCSV':
+                dataToShow = response.csv;
+                statsHtml = `<div class="alert alert-success"><i class="fas fa-file-csv"></i> <strong>CSV Metadata:</strong> ${Object.keys(dataToShow).length} tables</div>`;
+                break;
+            default: // viewCombined
+                dataToShow = response.combined;
+                const manualCount = Object.keys(response.manual).length;
+                const csvCount = Object.keys(response.csv).length;
+                const totalCount = Object.keys(dataToShow).length;
+                statsHtml = `<div class="alert alert-primary">
+                    <i class="fas fa-layer-group"></i> <strong>Combined Metadata:</strong> ${totalCount} tables 
+                    (${manualCount} manual, ${csvCount} CSV)
+                </div>`;
+                break;
+        }
+        
+        $('#metadataStats').html(statsHtml);
+        
+        if (Object.keys(dataToShow).length === 0) {
+            $('#currentMetadata').html('<p class="text-muted">No metadata found for this view.</p>');
+            return;
+        }
+
+        let html = '';
+        Object.keys(dataToShow).forEach(function(tableKey) {
+            const tableData = dataToShow[tableKey];
+            const tableName = tableKey.split('.').pop();
+            const schemaName = tableKey.split('.')[0];
+            
+            html += `<div class="mb-4 border rounded p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6><i class="fas fa-table"></i> ${tableName}`;
+            
+            if (tableData.table_info && tableData.table_info.tag) {
+                html += ` <span class="badge bg-primary">${tableData.table_info.tag}</span>`;
+            }
+            
+            // Show source for combined view
+            if (viewType === 'viewCombined' && tableData.sources) {
+                const tableSource = tableData.sources.table;
+                const sourceColor = tableSource === 'manual' ? 'info' : 'success';
+                html += ` <span class="badge bg-${sourceColor}">${tableSource}</span>`;
+            }
+            
+            html += '</h6>';
+            html += `<small class="text-muted">Schema: ${schemaName}</small>`;
+            html += '</div>';
+            
+            if (tableData.table_info && tableData.table_info.description) {
+                html += `<p class="text-muted small mb-2">${tableData.table_info.description}</p>`;
+            }
+            
+            if (tableData.table_info && (tableData.table_info.domain || tableData.table_info.owner)) {
+                html += '<div class="mb-2">';
+                if (tableData.table_info.domain) {
+                    html += `<span class="badge bg-light text-dark me-1">Domain: ${tableData.table_info.domain}</span>`;
+                }
+                if (tableData.table_info.owner) {
+                    html += `<span class="badge bg-light text-dark">Owner: ${tableData.table_info.owner}</span>`;
+                }
+                html += '</div>';
+            }
+            
+            if (tableData.columns && Object.keys(tableData.columns).length > 0) {
+                html += `<div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Tag</th>`;
+                
+                if (viewType === 'viewCombined') {
+                    html += '<th>Source</th>';
+                }
+                
+                html += '</tr></thead><tbody>';
+                
+                Object.keys(tableData.columns).forEach(function(column) {
+                    const meta = tableData.columns[column];
+                    html += `<tr>
+                        <td><strong>${column}</strong></td>
+                        <td><code>${meta.data_type}</code></td>
+                        <td><small>${meta.description}</small></td>
+                        <td>`;
+                    
+                    if (meta.tag) {
+                        html += `<span class="badge bg-secondary">${meta.tag}</span>`;
+                    } else {
+                        html += '<span class="text-muted">-</span>';
+                    }
+                    
+                    html += '</td>';
+                    
+                    if (viewType === 'viewCombined' && tableData.sources && tableData.sources.columns) {
+                        const colSource = tableData.sources.columns[column];
+                        const sourceColor = colSource === 'manual' ? 'info' : 'success';
+                        html += `<td><span class="badge bg-${sourceColor}">${colSource}</span></td>`;
+                    }
+                    
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += '<p class="text-muted small">No column metadata available</p>';
+            }
+            html += '</div>';
+        });
+        $('#currentMetadata').html(html);
+    });
+}
+
+function showMissingItemsDialog(missingItems) {
+    let summaryHtml = '<div class="row">';
+    
+    // Show current state
+    summaryHtml += '<div class="col-md-6">';
+    summaryHtml += '<h6><i class="fas fa-info-circle text-info"></i> Current State:</h6>';
+    summaryHtml += '<ul class="list-unstyled">';
+    summaryHtml += `<li><strong>Catalog:</strong> ${missingItems.current_catalog || 'Not selected'}</li>`;
+    summaryHtml += `<li><strong>Schema:</strong> ${missingItems.current_schema || 'Not selected'}</li>`;
+    summaryHtml += '</ul>';
+    summaryHtml += '</div>';
+    
+    // Show what needs to be loaded
+    summaryHtml += '<div class="col-md-6">';
+    summaryHtml += '<h6><i class="fas fa-download text-warning"></i> Needs Loading:</h6>';
+    summaryHtml += '<ul class="list-unstyled">';
+    
+    if (missingItems.missing_catalogs && missingItems.missing_catalogs.length > 0) {
+        summaryHtml += `<li><i class="fas fa-database text-danger"></i> Catalogs need to be loaded</li>`;
+    }
+    
+    if (missingItems.missing_schemas && missingItems.missing_schemas.length > 0) {
+        summaryHtml += `<li><i class="fas fa-layer-group text-warning"></i> Schemas: ${missingItems.missing_schemas.join(', ')}</li>`;
+    }
+    
+    if (missingItems.missing_tables && missingItems.missing_tables.length > 0) {
+        summaryHtml += `<li><i class="fas fa-table text-info"></i> Tables: ${missingItems.missing_tables.length} table(s)</li>`;
+        summaryHtml += '<div class="mt-2"><small class="text-muted">';
+        missingItems.missing_tables.forEach(function(table, index) {
+            if (index < 5) {
+                summaryHtml += `• ${table}<br>`;
+            } else if (index === 5) {
+                summaryHtml += `• ... and ${missingItems.missing_tables.length - 5} more`;
+            }
+        });
+        summaryHtml += '</small></div>';
+    }
+    
+    summaryHtml += '</ul>';
+    summaryHtml += '</div>';
+    summaryHtml += '</div>';
+    
+    $('#missingItemsSummary').html(summaryHtml);
+    
+    // Store missing items data for the load action
+    $('#loadMissingItemsBtn').data('missing-items', missingItems);
+    
+    // Show the modal
+    $('#missingItemsModal').modal('show');
+}
+
+// Handle load missing items button click
+$(document).on('click', '#loadMissingItemsBtn', function() {
+    const missingItems = $(this).data('missing-items');
+    
+    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
+    
+    $.ajax({
+        url: '/load_missing_items',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({missing_items: missingItems}),
+        success: function(response) {
+            if (response.success) {
+                // Show success message
+                let successHtml = `<div class="alert alert-success"><i class="fas fa-check"></i> ${response.message}</div>`;
+                
+                if (response.loaded_schemas && response.loaded_schemas.length > 0) {
+                    successHtml += `<div class="alert alert-info"><strong>Loaded schemas:</strong> ${response.loaded_schemas.join(', ')}</div>`;
+                }
+                
+                if (response.loaded_tables && response.loaded_tables.length > 0) {
+                    successHtml += `<div class="alert alert-info"><strong>Loaded tables:</strong> ${response.loaded_tables.join(', ')}</div>`;
+                }
+                
+                if (response.errors && response.errors.length > 0) {
+                    successHtml += `<div class="alert alert-warning"><strong>Warnings:</strong><br>${response.errors.join('<br>')}</div>`;
+                }
+                
+                $('#csvStatus').html(successHtml);
+                
+                // Close modal
+                $('#missingItemsModal').modal('hide');
+                
+                // Sync with backend and update UI
+                syncWithAutoDiscovery();
+                
+                // Load current metadata and update displays
+                loadCurrentMetadata();
+                updateStatusIndicators();
+                updateEmitTableSelection();
+                
+                // Show CSV data
+                setTimeout(function() {
+                    $('#viewCSV').prop('checked', true);
+                    loadCurrentMetadata();
+                }, 500);
+                
+            } else {
+                let errorHtml = `<div class="alert alert-danger"><i class="fas fa-times"></i> ${response.message}</div>`;
+                if (response.errors && response.errors.length > 0) {
+                    errorHtml += `<div class="alert alert-warning"><strong>Errors:</strong><br>${response.errors.join('<br>')}</div>`;
+                }
+                $('#csvStatus').html(errorHtml);
+                $('#missingItemsModal').modal('hide');
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#csvStatus').html(`<div class="alert alert-danger"><i class="fas fa-times"></i> Failed to load missing items: ${error}</div>`);
+            $('#missingItemsModal').modal('hide');
+        }
+    }).always(function() {
+        $('#loadMissingItemsBtn').prop('disabled', false).html('<i class="fas fa-download"></i> Load Missing Items');
+    });
+});
+
+
+</script>
+{% endblock %}

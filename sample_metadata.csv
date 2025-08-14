@@ -1,0 +1,18 @@
+SchemaName,Domain,OwnerName,TableName,TableDescription,TableTag,ColumnName,ColumnDescription,ColumnTag,ColumnDataType
+tpch_1,Sales,DataEngineer,customer,Customer master data,PII,c_custkey,Unique customer identifier,Primary Key,number
+tpch_1,Sales,DataEngineer,customer,Customer master data,PII,c_name,Customer full name,PII,string
+tpch_1,Sales,DataEngineer,customer,Customer master data,PII,c_address,Customer mailing address,PII,string
+tpch_1,Sales,DataEngineer,customer,Customer master data,PII,c_nationkey,Reference to nation table,Foreign Key,number
+tpch_1,Sales,DataEngineer,customer,Customer master data,PII,c_phone,Customer contact phone,PII,string
+tpch_1,Sales,DataEngineer,customer,Customer master data,PII,c_acctbal,Customer account balance,Financial,number
+tpch_1,Sales,DataEngineer,customer,Customer master data,PII,c_mktsegment,Customer market segment,Business,string
+tpch_1,Sales,DataEngineer,customer,Customer master data,PII,c_comment,Additional customer notes,Metadata,string
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_orderkey,Unique order identifier,Primary Key,number
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_custkey,Reference to customer,Foreign Key,number
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_orderstatus,Current order status,Business,string
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_totalprice,Total order amount,Financial,number
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_orderdate,Date order was placed,Temporal,string
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_orderpriority,Order processing priority,Business,string
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_clerk,Order processing clerk,Business,string
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_shippriority,Shipping priority level,Business,number
+tpch_1,Sales,DataEngineer,orders,Order transaction data,Transactional,o_comment,Order specific notes,Metadata,string
