@@ -1,6 +1,18 @@
+<div align="center">
+
 # 🚀 DataHub Metadata Manager
 
+<img src="logo.png" alt="DataHub Metadata Manager Logo" width="200"/>
+
+![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
+![Flask](https://img.shields.io/badge/flask-v2.0+-green.svg)
+![DataHub](https://img.shields.io/badge/datahub-compatible-orange.svg)
+![Trino](https://img.shields.io/badge/trino-supported-purple.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
 A comprehensive web application for managing and emitting metadata from Trino tables to DataHub with advanced features like auto-discovery, bulk CSV upload, and smart validation.
+
+</div>
 
 ## ✨ Features
 
