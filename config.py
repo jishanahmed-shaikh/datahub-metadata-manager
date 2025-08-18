@@ -4,8 +4,8 @@ Configuration file for DataHub Metadata Manager
 import os
 
 # Trino Configuration
-TRINO_HOST = os.getenv('TRINO_HOST', '3.108.199.0')
-TRINO_PORT = int(os.getenv('TRINO_PORT', 32092))
+TRINO_HOST = os.getenv('TRINO_HOST', '0.0.0.0')
+TRINO_PORT = int(os.getenv('TRINO_PORT', 00000))
 TRINO_USER = os.getenv('TRINO_USER', 'root')
 
 # DataHub Configuration
@@ -35,4 +35,5 @@ COLUMN_TAGS = [
     "Primary Key", "Foreign Key", "PII", "Financial", 
     "Business", "Temporal", "Metadata", "Calculated", 
     "Sensitive", "Encrypted"
+
 ]
