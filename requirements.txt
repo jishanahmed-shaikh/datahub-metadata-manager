@@ -3,3 +3,4 @@ pandas
 acryl-datahub
 flask
 werkzeug
+python-dotenv

@@ -14,7 +14,7 @@ Thank you for your interest in contributing to the DataHub Metadata Manager! Thi
 
 1. **Fork and Clone**
    ```bash
-   git clone https://github.com/your-username/datahub-metadata-manager.git
+   git clone https://github.com/jishanahmed-shaikh/datahub-metadata-manager.git
    cd datahub-metadata-manager
    ```
 

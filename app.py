@@ -1,6 +1,10 @@
 import logging
 import os
 import pandas as pd
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
 from werkzeug.utils import secure_filename
 from trino.dbapi import connect
@@ -29,6 +33,14 @@ from datahub.metadata.schema_classes import (
 import datetime
 import json
 
+# Import configuration first
+from config import (
+    TRINO_HOST, TRINO_PORT, TRINO_USER,
+    DATAHUB_GMS, PLATFORM, PLATFORM_INSTANCE, ENV, OWNER_URN,
+    FLASK_HOST, FLASK_PORT, FLASK_DEBUG, SECRET_KEY,
+    UPLOAD_FOLDER, MAX_CONTENT_LENGTH, TABLE_TAGS, COLUMN_TAGS
+)
+
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -49,14 +61,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import configuration
-from config import (
-    TRINO_HOST, TRINO_PORT, TRINO_USER,
-    DATAHUB_GMS, PLATFORM, PLATFORM_INSTANCE, ENV, OWNER_URN,
-    FLASK_HOST, FLASK_PORT, FLASK_DEBUG, SECRET_KEY,
-    UPLOAD_FOLDER, MAX_CONTENT_LENGTH, TABLE_TAGS, COLUMN_TAGS
-)
-
 # Global variables to store data
 current_catalogs = []
 current_schemas = []
@@ -72,7 +76,6 @@ import uuid
 session_id = str(uuid.uuid4())
 
 # Tags are now imported from config.py
-
 class TrinoConnector:
     def __init__(self):
         self.conn = None
@@ -88,7 +91,7 @@ class TrinoConnector:
                 schema=schema or "information_schema",
             )
             self.cursor = self.conn.cursor()
-            logger.info(f"Successfully connected to Trino")
+            logger.info(f"Successfully Connected to Trino")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to Trino: {str(e)}")
