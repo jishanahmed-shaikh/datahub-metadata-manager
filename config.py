@@ -28,12 +28,12 @@ MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH'))  # 16MB
 # Predefined tags
 TABLE_TAGS = [
     "PII", "Transactional", "Master Data", "Reference", 
-    "Analytical", "Staging", "Archive", "Sensitive"
+    "Analytical", "Staging", "Archive", "Sensitive", "System",
+    "Temporary", "Derived", "Metadata", "Audit", "Encrypted"
 ]
 
 COLUMN_TAGS = [
     "Primary Key", "Foreign Key", "PII", "Financial", 
     "Business", "Temporal", "Metadata", "Calculated", 
-    "Sensitive", "Encrypted"
-
+    "Sensitive", "Encrypted", "Index", "Audit", "Derived"
 ]
