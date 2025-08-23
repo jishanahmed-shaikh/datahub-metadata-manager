@@ -31,7 +31,6 @@ from datahub.metadata.schema_classes import (
     DomainsClass
 )
 import datetime
-import json
 
 # Import configuration first
 from config import (
