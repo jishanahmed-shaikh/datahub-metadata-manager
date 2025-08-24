@@ -35,5 +35,9 @@ TABLE_TAGS = [
 COLUMN_TAGS = [
     "Primary Key", "Foreign Key", "PII", "Financial", 
     "Business", "Temporal", "Metadata", "Calculated", 
-    "Sensitive", "Encrypted", "Index", "Audit", "Derived"
+    "Sensitive", "Encrypted", "Index", "Audit", "Derived", 
+    "System", "Temporary", "Reference", "Staging", "Archive", 
+    "Analytical", "Master Data", "Transactional", "Unique", "Nullable",
+    "Non-Nullable", "Auto-Increment", "Version", "Hash", "Flag", "Status", "Type", "Category",
+    "Description", "Comment", "Note"
 ]
